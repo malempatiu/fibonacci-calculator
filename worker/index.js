@@ -4,6 +4,7 @@ const redis = require('redis');
 const redisClient = redis.createClient({
   url: `redis://${keys.redisHost}:${keys.redisPort}`
 });
+redisClient.on("error", (err) => console.log("Worker, Redis Client Error", err));
 
 const subscriber = redisClient.duplicate();
 subscriber.connect();
