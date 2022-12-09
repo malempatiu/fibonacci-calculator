@@ -28,14 +28,14 @@ pgClient
 const redisClient = redis.createClient({
   url: `redis://${keys.redisHost}:${keys.redisPort}`,
 });
+redisClient.connect().then(() => {
+  console.log('Server, Connected to redis');
+});
 redisClient.on("error", (err) =>
   console.log("Server, Redis Client Error", err)
 );
 const redisPublisher = redisClient.duplicate();
-
-app.get('/', (req, res) => {
-  return res.status(200).json({ message: 'Fibonacci Calculator' });
-});
+redisPublisher.connect();
 
 app.get('/api/values/all', async (req, res) => {
   const values = await pgClient.query('SELECT * FROM values');
@@ -48,11 +48,16 @@ app.get("/api/values/current", async (req, res) => {
 });
 
 app.post("/api/values", async (req, res) => {
-  if (req.body.index > 40) return res.status(422).json({error: 'Index to high'});
+  if (req.body.index > 40) return res.status(400).json({error: 'Index to high'});
   await redisClient.hSet('values', req.body.index, 'Nothing yet!');
   await redisPublisher.publish("insert", req.body.index);
   await pgClient.query("INSERT INTO values(number) VALUES($1)", [req.body.index]);
   return res.status(200).json({ message: "Calculating..." });
+});
+
+app.post("/api/values/clear", async (req, res) => {
+  await pgClient.query("DELETE FROM values");
+  await redisClient.del("values");
 });
 
 app.listen(5000, () => {
