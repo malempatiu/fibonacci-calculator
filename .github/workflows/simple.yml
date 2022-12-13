@@ -10,3 +10,12 @@ jobs:
         run: |
           node --version
           npm --version
+  run-windows-command:
+    needs: ["run-shell-command"]
+    runs-on: windows-latest
+    steps:
+      - name: Directory PowerShell
+        run: Get-Location
+      - name: Directory Bash
+        run: pwd
+        shell: bash
